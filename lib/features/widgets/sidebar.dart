@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../dashboard/dashboard.dart';
 import '../screens/marketMonitor.dart';
 import '../screens/themesMoitor.dart';
+import '../screens/DashboardPage.dart';
 
 class SidebarContent extends StatelessWidget {
   final Function(Widget) onItemSelected;
@@ -31,7 +32,7 @@ class SidebarContent extends StatelessWidget {
               _MenuItem(
                 icon: Icons.dashboard,
                 title: "Dashboard",
-                page: NextMoveDashboard(),
+                page: DashboardPage(),
                 onTap: onItemSelected,
               ),
               _MenuItem(

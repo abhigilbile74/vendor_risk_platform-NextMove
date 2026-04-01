@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/settings.dart';
+import '../screens/DashboardPage.dart';
+
 
 class NextMoveDashboard extends StatefulWidget {
   const NextMoveDashboard({super.key});
@@ -15,7 +17,8 @@ class _NextMoveDashboardState extends State<NextMoveDashboard> {
   bool isDrawerOpen = false;
 
   /// ✅ Default Page
-  Widget selectedPage = const Center(child: Text("Dashboard"));
+  // Widget selectedPage = const Center(child: Text("Dashboard"));
+  Widget selectedPage = const DashboardPage();
 
   void toggleDrawer() {
     if (isDrawerOpen) {
@@ -71,7 +74,7 @@ class _NextMoveDashboardState extends State<NextMoveDashboard> {
               children: [
                 /// 🔝 HEADER
                 Container(
-                  height: 70,
+                  height: 60,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
                     color: Theme.of(context).cardColor,

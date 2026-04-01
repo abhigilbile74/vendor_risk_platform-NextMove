@@ -60,16 +60,16 @@ class MyTheme {
       onSecondary: Colors.white,
       error: Colors.red,
       onError: Colors.white,
-      background: Color(0xFF343541),
+      background: Color.fromARGB(255, 25, 25, 30),
       onBackground: Color(0xFFECECF1),
       surface: Color(0xFF444654),
       onSurface: Color(0xFFECECF1),
     ),
 
-    scaffoldBackgroundColor: const Color(0xFF343541),
+    scaffoldBackgroundColor: const Color.fromARGB(255, 22, 22, 27),
 
     appBarTheme: const AppBarTheme(
-      backgroundColor: Color(0xFF444654),
+      backgroundColor: Color.fromARGB(255, 29, 31, 41),
       foregroundColor: Color(0xFFECECF1),
       elevation: 0,
     ),
@@ -89,7 +89,7 @@ class MyTheme {
 
     textTheme: const TextTheme(
       bodyLarge: TextStyle(color: Color(0xFFECECF1)),
-      bodyMedium: TextStyle(color: Color(0xFFA1A1AA)),
+      bodyMedium: TextStyle(color: Color.fromARGB(255, 200, 248, 236)),
     ),
   );
 }

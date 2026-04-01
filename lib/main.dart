@@ -2,15 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/theme/themes.dart';
 import 'core/theme/theme_cubit/themeCubit.dart';
-import 'features/auth/screens/login_screen.dart';
+import 'features/auth/screens/onbordingScreen.dart';
 
 void main() {
-  runApp(
-    BlocProvider(
-      create: (_) => ThemeCubit(),
-      child: const MyApp(),
-    ),
-  );
+  runApp(BlocProvider(create: (_) => ThemeCubit(), child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -26,7 +21,7 @@ class MyApp extends StatelessWidget {
           darkTheme: MyTheme.darkTheme,
           themeMode: themeMode,
 
-          home: const LoginScreen(), // 🔥 START HERE
+          home: const OnboardingScreen() // 🔥 START HERE
         );
       },
     );

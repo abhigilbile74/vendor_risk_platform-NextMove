@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import 'package:vendor_risk_platform/features/dashboard/dashboard.dart';
+
 import 'register_screen.dart';
-import '../../../home.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,6 +12,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+
   final email = TextEditingController();
   final password = TextEditingController();
 
@@ -18,14 +21,16 @@ class _LoginState extends State<LoginScreen> {
   String? error;
 
   void login() async {
+    if (!_formKey.currentState!.validate()) return;
+
     setState(() {
       loading = true;
       error = null;
     });
 
     final res = await AuthService.login(
-      email: email.text,
-      password: password.text,
+      email: email.text.trim(),
+      password: password.text.trim(),
     );
 
     setState(() => loading = false);
@@ -33,7 +38,7 @@ class _LoginState extends State<LoginScreen> {
     if (res == null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const Home()),
+        MaterialPageRoute(builder: (_) => const NextMoveDashboard()),
       );
     } else {
       setState(() => error = res);
@@ -42,40 +47,140 @@ class _LoginState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Container(
-          width: 350,
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text("Login", style: Theme.of(context).textTheme.headlineSmall),
+    final isWeb = MediaQuery.of(context).size.width > 600;
 
-              TextField(controller: email, decoration: InputDecoration(labelText: "Email")),
-              TextField(controller: password, obscureText: true, decoration: InputDecoration(labelText: "Password")),
+   return Scaffold(
+  backgroundColor: Colors.grey[100],
+  resizeToAvoidBottomInset: true,
+  body: SafeArea(
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          keyboardDismissBehavior:
+              ScrollViewKeyboardDismissBehavior.onDrag,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: constraints.maxHeight,
+            ),
+            child: Center(
+              child: Container(
+                width: MediaQuery.of(context).size.width > 600
+                    ? 400
+                    : double.infinity,
+                padding: const EdgeInsets.all(20),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min, // 🔥 important
+                    children: [
+                      Image.asset(
+                        'assets/images/Login_image.png',
+                        height: 180,
+                      ),
 
-              if (error != null)
-                Text(error!, style: const TextStyle(color: Colors.red)),
+                      const SizedBox(height: 20),
 
-              const SizedBox(height: 20),
+                      const Text(
+                        "Welcome Back 👋",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
 
-              loading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(onPressed: login, child: const Text("Login")),
+                      const SizedBox(height: 20),
 
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                  );
-                },
-                child: const Text("Create Account"),
-              )
-            ],
+                      TextFormField(
+                        controller: email,
+                        decoration: _inputDecoration(
+                          label: "Email",
+                          icon: Icons.email_outlined,
+                        ),
+                        validator: (value) =>
+                            value!.isEmpty ? "Enter email" : null,
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      TextFormField(
+                        controller: password,
+                        obscureText: true,
+                        decoration: _inputDecoration(
+                          label: "Password",
+                          icon: Icons.lock_outline,
+                        ),
+                        validator: (value) =>
+                            value!.length < 6 ? "Min 6 characters" : null,
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      if (error != null)
+                        Text(error!,
+                            style: const TextStyle(color: Colors.red)),
+
+                      const SizedBox(height: 20),
+
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: loading ? null : login,
+                          child: loading
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white)
+                              : const Text("Login"),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.center,
+
+                              children: [
+
+                                const Text("New here? "),
+
+                                TextButton(
+                                  onPressed: () {
+
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) =>
+                                            const RegisterScreen(),
+                                      ),
+                                    );
+                                  },
+
+                                  child: const Text("Create Account"),
+                                ),
+                              ],
+                            ),
+
+                      const SizedBox(height: 40), // 🔥 prevents bottom cut
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
+        );
+      },
+    ),
+  ),
+);
+  }
+
+  InputDecoration _inputDecoration({
+    required String label,
+    required IconData icon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
     );
   }
