@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+requests
+vaderSentiment
+pandas
+scikit-learn
+yfinance
+python-dotenv

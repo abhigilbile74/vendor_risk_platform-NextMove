@@ -1,0 +1,18 @@
+# Python virtual environment
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+
+# Data and Dataset
+data/
+*.csv
+
+# Environment variables (API Keys)
+.env
+config.py (Optional: only if you want to hide your API key file)
+
+# IDE specific files
+.vscode/
+.idea/

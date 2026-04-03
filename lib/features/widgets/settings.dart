@@ -5,6 +5,8 @@ import '../../features/auth/screens/login_screen.dart';
 import '../auth/services/auth_service.dart';
 
 class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
+
   // Converted to StatelessWidget since Cubit handles the state now
   @override
   Widget build(BuildContext context) {
@@ -36,7 +38,7 @@ class SettingsScreen extends StatelessWidget {
             title: const Text("Appearance"),
             subtitle: Text(isDark ? "Dark Mode Enabled" : "Light Mode Enabled"),
             value: isDark,
-            activeColor: Theme.of(context).primaryColor,
+            activeThumbColor: Theme.of(context).primaryColor,
             onChanged: (bool value) {
               // Call your Cubit's method to toggle the theme
               // Replace 'toggleTheme()' with your actual method name
