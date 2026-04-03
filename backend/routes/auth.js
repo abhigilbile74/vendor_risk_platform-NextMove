@@ -8,7 +8,7 @@ const router = express.Router();
 /// REGISTER / SIGNUP
 const registerUser = async (req, res) => {
   try {
-    const { name, mobile, email, password } = req.body;
+    const { fullName, mobile, email, password } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser)
@@ -17,7 +17,7 @@ const registerUser = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = new User({
-      name,
+      fullName,
       mobile,
       email,
       password: hashedPassword,
@@ -56,7 +56,7 @@ router.post("/login", async (req, res) => {
     res.json({
       token,
       user: {
-        name: user.name,
+        fullName: user.fullName,
         mobile: user.mobile,
         email: user.email,
       },

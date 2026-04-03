@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/sidebar.dart';
 import '../widgets/settings.dart';
 import '../screens/DashboardPage.dart';
-
+import '../../core/services/api_service.dart';
 
 class NextMoveDashboard extends StatefulWidget {
   const NextMoveDashboard({super.key});
@@ -14,22 +14,35 @@ class NextMoveDashboard extends StatefulWidget {
 class _NextMoveDashboardState extends State<NextMoveDashboard> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  bool isDrawerOpen = false;
-
   /// ✅ Default Page
-  // Widget selectedPage = const Center(child: Text("Dashboard"));
   Widget selectedPage = const DashboardPage();
 
-  void toggleDrawer() {
-    if (isDrawerOpen) {
-      Navigator.of(context).pop();
-    } else {
-      _scaffoldKey.currentState?.openDrawer();
-    }
+  Map<String, dynamic>? user;
+  bool isLoading = true;
 
-    setState(() {
-      isDrawerOpen = !isDrawerOpen;
-    });
+  @override
+  void initState() {
+    super.initState();
+    loadUser();
+  }
+
+  /// ✅ FIXED: Safe API handling
+  Future<void> loadUser() async {
+    try {
+      final users = await ApiService().fetchUsers();
+
+      if (users.isNotEmpty) {
+        setState(() {
+          user = users[0];
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching user: $e");
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   /// ✅ Handle Sidebar Click
@@ -52,7 +65,7 @@ class _NextMoveDashboardState extends State<NextMoveDashboard> {
           : Drawer(
               child: SidebarContent(
                 onItemSelected: (page) {
-                  Navigator.pop(context); // close only on mobile
+                  Navigator.pop(context);
                   onMenuSelected(page);
                 },
               ),
@@ -60,7 +73,7 @@ class _NextMoveDashboardState extends State<NextMoveDashboard> {
 
       body: Row(
         children: [
-          /// 💻 Desktop Sidebar (Always Visible)
+          /// 💻 Desktop Sidebar
           if (isDesktop)
             Container(
               width: 260,
@@ -95,9 +108,20 @@ class _NextMoveDashboardState extends State<NextMoveDashboard> {
                             _scaffoldKey.currentState?.openDrawer();
                           },
                         ),
+
                       const Spacer(),
 
-                      _buildUserHeader(context),
+                      /// ✅ FIXED: Better loading + null handling
+                      if (isLoading)
+                        const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      else if (user != null)
+                        _buildUserHeader(context, user!)
+                      else
+                        const Text("No User"),
                     ],
                   ),
                 ),
@@ -119,7 +143,7 @@ class _NextMoveDashboardState extends State<NextMoveDashboard> {
 }
 
 /// 👤 User Profile Header
-Widget _buildUserHeader(BuildContext context) {
+Widget _buildUserHeader(BuildContext context, Map<String, dynamic> user) {
   return InkWell(
     onTap: () {
       Navigator.push(
@@ -135,26 +159,31 @@ Widget _buildUserHeader(BuildContext context) {
       ),
       child: Row(
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 18,
-            backgroundImage: NetworkImage('https://via.placeholder.com/150'),
+            backgroundImage: NetworkImage(
+              user['profilePic'] ?? 'https://via.placeholder.com/150',
+            ),
           ),
           const SizedBox(width: 10),
+
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Alex Rivera",
+                (user['fullName'] as String?) ?? "No Name",
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               Text(
                 "View Profile",
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Colors.grey),
               ),
             ],
           ),
+
           const SizedBox(width: 6),
           const Icon(Icons.settings, size: 18),
         ],
