@@ -1,51 +1,129 @@
+﻿import sys, os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+"""
+main.py
+FastAPI application entry point.
+Wires up: DB, Cache, Scheduler, CORS, Routers.
+"""
+import sys
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
-from services.news_service import fetch_news
-from services.sentiment_service import get_sentiment, sentiment_label
-from services.fake_news_service import authenticity
-from services.prediction_service import impact_score, market_prediction, final_decision
-from ml.trainer import train_model
-from ml.model import predict_ml
+from fastapi.middleware.cors import CORSMiddleware
+from loguru import logger
 
-app = FastAPI()
+from config.settings import get_settings
+from utils.database import connect_db, close_db
+from utils.cache import connect_cache, close_cache
+from Jobs.scheduler import start_scheduler, stop_scheduler
+from API.news import router as news_router
+from API.signals import router as signals_router
+from API.admin import router as admin_router
+from API.analysis import router as analysis_router
+from API.terminal import router as terminal_router
 
-model = train_model()
+settings = get_settings()
+
+# â”€â”€ Logging â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+logger.remove()
+logger.add(sys.stderr, level="INFO" if not settings.debug else "DEBUG")
+logger.add(
+    "logs/app.log",
+    rotation="50 MB",
+    retention="7 days",
+    level="INFO",
+    enqueue=True,
+)
 
 
-@app.get("/")
-def home():
-    return {"message": "NextMove News Engine Running 🚀"}
+# â”€â”€ Lifespan â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    logger.info("ðŸš€ Starting News Intelligence Backend...")
+    await connect_db()
+    await connect_cache()
+    start_scheduler()
+    # Immediately run one collection on startup
+    from Jobs.collect_news import run_collection
+    from utils.database import get_db
+    try:
+        await run_collection(get_db())
+    except Exception as e:
+        logger.warning(f"Startup collection failed (non-fatal): {e}")
+    logger.info("âœ… All systems ready")
+    yield
+    logger.info("ðŸ›‘ Shutting down...")
+    stop_scheduler()
+    await close_cache()
+    await close_db()
 
 
-@app.get("/analyze/{company}")
-def analyze(company: str):
-    news_list = fetch_news(company)
+app = FastAPI(
+    title="News Intelligence API",
+    description="Real-time news sentiment + market signal engine for NSE stocks",
+    version="2.0.0",
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
 
-    results = []
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # tighten in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-    for news in news_list:
-        text = (news["title"] or "") + " " + (news["description"] or "")
+#  Routers 
+app.include_router(news_router)
+app.include_router(signals_router)
+app.include_router(admin_router)
+app.include_router(analysis_router)
+app.include_router(terminal_router)
 
-        sentiment = get_sentiment(text)
-        sentiment_type = sentiment_label(sentiment)
 
-        auth_text = authenticity(text, news["source"])
-        auth_val = 1 if auth_text == "LIKELY TRUE" else 0
-
-        impact = impact_score(sentiment, auth_text)
-        rule_prediction = market_prediction(impact)
-
-        ml_prediction = predict_ml(model, sentiment, auth_val)
-
-        results.append({
-            "news": news["title"],
-    "symbol": news.get("symbol", "N/A"), # Added symbol for context
-    "sentiment": sentiment_type,
-    "authenticity": auth_text,
-    "ml_trend": "UP 📈" if ml_prediction == 1 else "DOWN 📉",
-    "decision": final_decision(sentiment, auth_text)
-        })
-
+@app.get("/", tags=["Health"])
+async def root():
     return {
-        "company": company,
-        "analysis": results
+        "service": "News Intelligence API",
+        "version": "2.0.0",
+        "status": "running",
+        "docs": "/docs",
     }
+
+
+@app.get("/health", tags=["Health"])
+async def health():
+    from utils.database import get_db
+    from utils.cache import get_cached
+    db_ok = False
+    cache_ok = False
+    try:
+        await get_db().command("ping")
+        db_ok = True
+    except Exception:
+        pass
+    try:
+        await get_cached("ping")
+        cache_ok = True
+    except Exception:
+        cache_ok = True   # Redis is optional
+    return {
+        "database": "ok" if db_ok else "error",
+        "cache": "ok" if cache_ok else "unavailable",
+        "status": "healthy" if db_ok else "degraded",
+    }
+
+
+# â”€â”€ Dev runner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host=settings.app_host,
+        port=settings.app_port,
+        reload=settings.debug,
+        log_level="debug" if settings.debug else "info",
+    )

@@ -1,8 +1,43 @@
-fastapi
-uvicorn
-requests
-vaderSentiment
-pandas
-scikit-learn
-yfinance
-python-dotenv
+# Core
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+python-dotenv==1.0.1
+pydantic==2.7.1
+pydantic-settings==2.2.1
+
+# Database
+motor==3.4.0
+pymongo==4.7.2
+redis==5.0.4
+
+# ML & Data
+scikit-learn==1.4.2
+xgboost==2.0.3
+pandas==2.2.2
+numpy==1.26.4
+joblib==1.4.2
+imbalanced-learn==0.12.2
+
+# NLP & Sentiment
+vaderSentiment==3.3.2
+nltk==3.8.1
+transformers==4.40.2
+torch==2.3.0
+
+# News & Finance
+newsapi-python==0.2.7
+yfinance==0.2.40
+feedparser==6.0.11
+requests==2.31.0
+httpx==0.27.0
+beautifulsoup4==4.12.3
+
+# Scheduling
+apscheduler==3.10.4
+
+# Utilities
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+aiohttp==3.9.5
+tenacity==8.3.0
+loguru==0.7.2

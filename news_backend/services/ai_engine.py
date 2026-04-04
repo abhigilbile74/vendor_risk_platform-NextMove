@@ -1,49 +1,66 @@
-from transformers import BertTokenizer, BertForSequenceClassification
-from scipy.special import softmax
-import torch
+"""
+services/ai_engine.py
+The central intelligence coordinator.
+Exposes a single analyze_news() method used by both the scheduler and
+the REST API for on-demand analysis of arbitrary text.
+"""
+from dataclasses import dataclass, asdict
+from datetime import datetime, timezone
 
-# Load the FinBERT Model (The "Brain")
-model_name = "yiyanghkust/finbert-tone"
-tokenizer = BertTokenizer.from_pretrained(model_name)
-model = BertForSequenceClassification.from_pretrained(model_name)
+from services.sentiment_service import analyze_article, SentimentResult
+from services.prediction_service import get_prediction_service, PredictionResult
+from config.sectors import get_sector, get_credibility
 
-def analyze_market_impact(headline):
-    # 1. Tokenize the news
-    inputs = tokenizer(headline, return_tensors="pt", padding=True, truncation=True, max_length=512)
-    
-    # 2. Predict Sentiment
-    with torch.no_grad():
-        outputs = model(**inputs)
-    
-    # 3. Process Scores
-    scores = outputs.logits.detach().numpy()[0]
-    scores = softmax(scores) # Converts to percentages
-    
-    # FinBERT labels: 0: Neutral, 1: Positive, 2: Negative
-    sentiment_map = {0: "Neutral", 1: "Positive", 2: "Negative"}
-    max_idx = scores.argmax()
-    sentiment = sentiment_map[max_idx]
-    confidence = scores[max_idx]
 
-    # 4. Market Impact Logic (The "Learning" Part)
-    impact = "HOLD"
-    severity = "LOW"
+@dataclass
+class AnalysisResult:
+    symbol: str
+    sector: str
+    sentiment: dict
+    prediction: dict
+    analysis_timestamp: str
 
-    if sentiment == "Negative":
-        impact = "SELL"
-        severity = "HIGH" if confidence > 0.8 else "MEDIUM"
-    elif sentiment == "Positive":
-        impact = "BUY"
-        severity = "HIGH" if confidence > 0.8 else "MEDIUM"
+    def to_dict(self) -> dict:
+        return asdict(self)
 
-    return {
-        "sentiment": sentiment,
-        "confidence": float(confidence),
-        "severity": severity,
-        "suggested_action": impact
-    }
 
-# --- QUICK TEST ---
-if __name__ == "__main__":
-    test_news = "Reliance shares plunge 5% after massive fraud investigation begins"
-    print(analyze_market_impact(test_news))
+def analyze_news(
+    symbol: str,
+    title: str,
+    description: str = "",
+    source_url: str = "",
+) -> AnalysisResult:
+    """
+    Full analysis pipeline for a single news item.
+    1. Resolve credibility from source URL
+    2. Run multi-layer sentiment analysis
+    3. Run ML/rule-based prediction
+    4. Return structured AnalysisResult
+    """
+    credibility = get_credibility(source_url)
+    sentiment: SentimentResult = analyze_article(title, description, credibility)
+    prediction_svc = get_prediction_service()
+    prediction: PredictionResult = prediction_svc.predict(symbol, sentiment, credibility)
+    sector = get_sector(symbol)
+
+    return AnalysisResult(
+        symbol=symbol,
+        sector=sector,
+        sentiment={
+            "score": sentiment.score,
+            "label": sentiment.label,
+            "strength": sentiment.strength,
+            "vader_compound": sentiment.vader_compound,
+            "bullish_hits": sentiment.bullish_hits,
+            "bearish_hits": sentiment.bearish_hits,
+            "fake_risk_score": sentiment.fake_risk_score,
+            "credibility_score": credibility,
+        },
+        prediction={
+            "signal": prediction.signal,
+            "confidence": prediction.confidence,
+            "model_used": prediction.model_used,
+            "reasoning": prediction.reasoning,
+        },
+        analysis_timestamp=datetime.now(timezone.utc).isoformat(),
+    )
