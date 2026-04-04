@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'core/theme/themes.dart';
 import 'core/theme/theme_cubit/themeCubit.dart';
 import 'features/auth/screens/onbordingScreen.dart';
+import 'features/dashboard/dashboard.dart';
 
 void main() {
   runApp(BlocProvider(create: (_) => ThemeCubit(), child: const MyApp()));
@@ -21,7 +22,8 @@ class MyApp extends StatelessWidget {
           darkTheme: MyTheme.darkTheme,
           themeMode: themeMode,
 
-          home: const OnboardingScreen() // 🔥 START HERE
+          // home: const OnboardingScreen() // 🔥 START HERE
+          home: const NextMoveDashboard() // 🔥 START HERE
         );
       },
     );
