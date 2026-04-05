@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:vendor_risk_platform/features/negative_news/presentation/screens/negative_news_screen.dart';
 import '../screens/marketMonitor.dart';
 import '../screens/themesMoitor.dart';
 import '../screens/DashboardPage.dart';
@@ -100,7 +101,7 @@ class SidebarContent extends StatelessWidget {
               _MenuItem(
                 icon: Icons.campaign,
                 title: "Negative News",
-                page: Marketmonitor(),
+                page: NegativeNewsScreen(),
                 onTap: onItemSelected,
               ),
               _MenuItem(
